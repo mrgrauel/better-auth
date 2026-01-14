@@ -47,4 +47,6 @@ export const BASE_ERROR_CODES = defineErrorCodes({
 	ASYNC_VALIDATION_NOT_SUPPORTED: "Async validation is not supported",
 	VALIDATION_ERROR: "Validation Error",
 	MISSING_FIELD: "Field is required",
+	SKIP_EMAIL_VERIFICATION_NOT_ENABLED:
+		"Skip email verification is not enabled in configuration",
 });

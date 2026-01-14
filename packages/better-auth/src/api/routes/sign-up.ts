@@ -21,6 +21,7 @@ const signUpEmailBodySchema = z
 		image: z.string().optional(),
 		callbackURL: z.string().optional(),
 		rememberMe: z.boolean().optional(),
+		skipEmailVerification: z.boolean().optional(),
 	})
 	.and(z.record(z.string(), z.any()));
 
@@ -45,6 +46,7 @@ export const signUpEmail = <O extends BetterAuthOptions>() =>
 						image?: string | undefined;
 						callbackURL?: string | undefined;
 						rememberMe?: boolean | undefined;
+						skipEmailVerification?: boolean | undefined;
 					} & AdditionalUserFieldsInput<O>,
 					returned: {} as {
 						token: string | null;
@@ -85,6 +87,11 @@ export const signUpEmail = <O extends BetterAuthOptions>() =>
 											type: "boolean",
 											description:
 												"If this is false, the session will not be remembered. Default is `true`.",
+										},
+										skipEmailVerification: {
+											type: "boolean",
+											description:
+												"Skip email verification (requires allowSkipEmailVerification config)",
 										},
 									},
 									required: ["name", "email", "password"],
@@ -201,6 +208,7 @@ export const signUpEmail = <O extends BetterAuthOptions>() =>
 					image,
 					callbackURL: _callbackURL,
 					rememberMe,
+					skipEmailVerification,
 					...rest
 				} = body;
 				const isValidEmail = z.email().safeParse(email);
@@ -232,6 +240,14 @@ export const signUpEmail = <O extends BetterAuthOptions>() =>
 						message: BASE_ERROR_CODES.PASSWORD_TOO_LONG,
 					});
 				}
+				if (
+					skipEmailVerification &&
+					!ctx.context.options.emailAndPassword?.allowSkipEmailVerification
+				) {
+					throw new APIError("BAD_REQUEST", {
+						message: BASE_ERROR_CODES.SKIP_EMAIL_VERIFICATION_NOT_ENABLED,
+					});
+				}
 				const dbUser = await ctx.context.internalAdapter.findUserByEmail(email);
 				if (dbUser?.user) {
 					ctx.context.logger.info(
@@ -258,7 +274,7 @@ export const signUpEmail = <O extends BetterAuthOptions>() =>
 						name,
 						image,
 						...data,
-						emailVerified: false,
+						emailVerified: skipEmailVerification === true ? true : false,
 					});
 					if (!createdUser) {
 						throw new APIError("BAD_REQUEST", {
@@ -289,8 +305,9 @@ export const signUpEmail = <O extends BetterAuthOptions>() =>
 					password: hash,
 				});
 				if (
-					ctx.context.options.emailVerification?.sendOnSignUp ||
-					ctx.context.options.emailAndPassword.requireEmailVerification
+					skipEmailVerification !== true &&
+					(ctx.context.options.emailVerification?.sendOnSignUp ||
+						ctx.context.options.emailAndPassword.requireEmailVerification)
 				) {
 					const token = await createEmailVerificationToken(
 						ctx.context.secret,

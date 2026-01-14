@@ -542,6 +542,16 @@ export type BetterAuthOptions = {
 				 */
 				requireEmailVerification?: boolean;
 				/**
+				 * Allow clients to bypass email verification during sign-up
+				 * by providing `skipEmailVerification: true` in the request body.
+				 * 
+				 * ⚠️ Security: Only enable this if you trust your clients or have
+				 * additional verification mechanisms in place.
+				 * 
+				 * @default false
+				 */
+				allowSkipEmailVerification?: boolean;
+				/**
 				 * The maximum length of the password.
 				 *
 				 * @default 128
